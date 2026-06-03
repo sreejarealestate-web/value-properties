@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, MapPin, Filter, Building2 } from 'lucide-react'
 import { locations } from '@/data/locations'
 import { getProjectsByLocation } from '@/data/projects'
+import { locationBoundaries } from '@/data/boundaries'
 import { Location, Project } from '@/types'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
@@ -41,117 +42,158 @@ export default function MapIntelligence() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [activeFilters, setActiveFilters] = useState<string[]>([])
   const mapRef = useRef<any>(null)
-  const mapContainerRef = useRef<HTMLDivElement>(null)
-  const markersRef = useRef<any[]>([])
-  const circlesRef = useRef<any>(null)
+  const dotMarkersRef = useRef<Record<string, any>>({})
+  const projectMarkersRef = useRef<any[]>([])
+  const boundaryLayerRef = useRef<any>(null)
 
   const locationProjects = selectedLocation ? getProjectsByLocation(selectedLocation.id) : []
 
-  const toggleFilter = (id: string) => {
+  const toggleFilter = (id: string) =>
     setActiveFilters(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])
-  }
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return
-
-    let map: any
-    ;(async () => {
+    if (!mapRef.current) return
+    // Update project pins when selectedLocation changes
+    const updateProjectPins = async () => {
       const L = (await import('leaflet')).default
-      await import('leaflet/dist/leaflet.css')
+      // Remove old project markers
+      projectMarkersRef.current.forEach(m => m.remove())
+      projectMarkersRef.current = []
 
-      // Fix default icon paths for Next.js
-      delete (L.Icon.Default.prototype as any)._getIconUrl
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
-      })
+      if (!selectedLocation) return
+      const projs = getProjectsByLocation(selectedLocation.id)
 
-      map = L.map(mapContainerRef.current!, {
-        center: [19.0200, 72.8347],
-        zoom: 12,
-        zoomControl: false,
-      })
-
-      mapRef.current = map
-
-      // Premium light tile layer
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '© OpenStreetMap © CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map)
-
-      L.control.zoom({ position: 'topright' }).addTo(map)
-
-      // Custom gold dot icon
-      const goldIcon = L.divIcon({
-        className: '',
-        html: `<div style="
-          width:12px;height:12px;border-radius:50%;
-          background:#B8973B;border:2px solid white;
-          box-shadow:0 2px 8px rgba(184,151,59,0.5);
-          cursor:pointer;transition:transform 0.2s;
-        "></div>`,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
-      })
-
-      const activeIcon = L.divIcon({
-        className: '',
-        html: `<div style="
-          width:16px;height:16px;border-radius:50%;
-          background:#B8973B;border:3px solid white;
-          box-shadow:0 2px 16px rgba(184,151,59,0.7);
-          cursor:pointer;
-        "></div>`,
-        iconSize: [16, 16],
-        iconAnchor: [8, 8],
-      })
-
-      locations.forEach(location => {
-        const [lng, lat] = location.coordinates
-        const marker = L.marker([lat, lng], { icon: goldIcon })
-          .addTo(map)
-          .bindTooltip(location.name, {
-            permanent: false,
-            direction: 'top',
-            className: 'leaflet-tooltip-custom',
-            offset: [0, -8],
-          })
-
-        marker.on('click', () => {
-          // Reset all markers
-          markersRef.current.forEach(m => m.marker.setIcon(goldIcon))
-          marker.setIcon(activeIcon)
-
-          // Remove previous circle
-          if (circlesRef.current) circlesRef.current.remove()
-
-          // Draw highlight circle
-          circlesRef.current = L.circle([lat, lng], {
-            radius: 600,
-            color: '#B8973B',
-            fillColor: '#B8973B',
-            fillOpacity: 0.08,
-            weight: 1.5,
-            dashArray: '4 4',
-          }).addTo(map)
-
-          map.flyTo([lat, lng], 14, { duration: 1.2, easeLinearity: 0.4 })
-          setSelectedLocation(location)
-          setSelectedProject(null)
+      projs.forEach(project => {
+        const [lng, lat] = project.coordinates
+        const icon = L.divIcon({
+          className: '',
+          html: `<div style="
+            display:flex;align-items:center;gap:5px;
+            background:white;border:1.5px solid #B8973B;
+            border-radius:20px;padding:4px 8px 4px 5px;
+            box-shadow:0 2px 12px rgba(184,151,59,0.25);
+            cursor:pointer;white-space:nowrap;
+          ">
+            <div style="width:7px;height:7px;border-radius:50%;background:#B8973B;flex-shrink:0;"></div>
+            <span style="font-size:11px;font-weight:500;color:#09090B;font-family:-apple-system,sans-serif;">${project.name}</span>
+          </div>`,
+          iconAnchor: [0, 12],
         })
 
-        markersRef.current.push({ marker, locationId: location.id })
+        const marker = L.marker([lat, lng], { icon })
+          .addTo(mapRef.current)
+          .on('click', () => setSelectedProject(project))
+
+        projectMarkersRef.current.push(marker)
       })
-    })()
+    }
+
+    updateProjectPins()
+  }, [selectedLocation])
+
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    const highlightBoundary = async () => {
+      const L = (await import('leaflet')).default
+
+      // Remove old boundary
+      if (boundaryLayerRef.current) {
+        boundaryLayerRef.current.remove()
+        boundaryLayerRef.current = null
+      }
+      if (!selectedLocation) return
+
+      const coords = locationBoundaries[selectedLocation.id]
+      if (!coords) return
+
+      boundaryLayerRef.current = L.polygon(coords, {
+        color: '#B8973B',
+        fillColor: '#B8973B',
+        fillOpacity: 0.12,
+        weight: 2,
+        dashArray: '6 4',
+      }).addTo(mapRef.current)
+    }
+
+    highlightBoundary()
+  }, [selectedLocation])
+
+  useEffect(() => {
+    if (!mapRef.current) {
+      ;(async () => {
+        const L = (await import('leaflet')).default
+        await import('leaflet/dist/leaflet.css')
+
+        delete (L.Icon.Default.prototype as any)._getIconUrl
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+        })
+
+        const map = L.map('intelligence-map', {
+          center: [19.0200, 72.8347],
+          zoom: 12,
+          zoomControl: false,
+        })
+        mapRef.current = map
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+          attribution: '',
+          subdomains: 'abcd',
+          maxZoom: 19,
+        }).addTo(map)
+
+        L.control.zoom({ position: 'topright' }).addTo(map)
+
+        // Gold dot marker for each location
+        const dotIcon = (active = false) => L.divIcon({
+          className: '',
+          html: `<div style="
+            width:${active ? 14 : 10}px;height:${active ? 14 : 10}px;
+            border-radius:50%;background:#B8973B;
+            border:${active ? 3 : 2}px solid white;
+            box-shadow:0 2px ${active ? 16 : 8}px rgba(184,151,59,${active ? 0.7 : 0.4});
+            cursor:pointer;transition:all 0.2s;
+          "></div>`,
+          iconSize: [active ? 14 : 10, active ? 14 : 10],
+          iconAnchor: [active ? 7 : 5, active ? 7 : 5],
+        })
+
+        locations.forEach(location => {
+          const [lng, lat] = location.coordinates
+          const marker = L.marker([lat, lng], { icon: dotIcon() })
+            .addTo(map)
+            .bindTooltip(location.name, {
+              permanent: false,
+              direction: 'top',
+              className: 'vp-tooltip',
+              offset: [0, -8],
+            })
+
+          dotMarkersRef.current[location.id] = marker
+
+          marker.on('click', () => {
+            // Reset all dots
+            Object.entries(dotMarkersRef.current).forEach(([id, m]) =>
+              m.setIcon(dotIcon(id === location.id))
+            )
+            map.flyTo([lat, lng], 14, { duration: 1.2, easeLinearity: 0.4 })
+            setSelectedLocation(location)
+            setSelectedProject(null)
+          })
+        })
+      })()
+    }
 
     return () => {
       if (mapRef.current) {
         mapRef.current.remove()
         mapRef.current = null
-        markersRef.current = []
+        dotMarkersRef.current = {}
+        projectMarkersRef.current = []
+        boundaryLayerRef.current = null
       }
     }
   }, [])
@@ -160,26 +202,46 @@ export default function MapIntelligence() {
     if (!mapRef.current) return
     const [lng, lat] = location.coordinates
     mapRef.current.flyTo([lat, lng], 14, { duration: 1.2, easeLinearity: 0.4 })
+    Object.entries(dotMarkersRef.current).forEach(([id, m]) => {
+      const dotIcon = (active = false) => {
+        const L = (window as any).L
+        if (!L) return
+        return L.divIcon({
+          className: '',
+          html: `<div style="width:${active ? 14 : 10}px;height:${active ? 14 : 10}px;border-radius:50%;background:#B8973B;border:${active ? 3 : 2}px solid white;box-shadow:0 2px ${active ? 16 : 8}px rgba(184,151,59,${active ? 0.7 : 0.4});cursor:pointer;"></div>`,
+          iconSize: [active ? 14 : 10, active ? 14 : 10],
+          iconAnchor: [active ? 7 : 5, active ? 7 : 5],
+        })
+      }
+      const icon = dotIcon(id === location.id)
+      if (icon) m.setIcon(icon)
+    })
   }
 
   return (
     <>
-      {/* Leaflet tooltip style */}
       <style>{`
-        .leaflet-tooltip-custom {
-          background: white;
-          border: 1px solid #E4E4E7;
-          border-radius: 8px;
-          padding: 4px 10px;
-          font-size: 12px;
-          font-weight: 500;
-          color: #09090B;
-          font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        .vp-tooltip {
+          background: white !important;
+          border: 1px solid #E4E4E7 !important;
+          border-radius: 8px !important;
+          padding: 4px 10px !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+          color: #09090B !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif !important;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.08) !important;
         }
-        .leaflet-tooltip-custom::before { display: none; }
+        .vp-tooltip::before { display: none !important; }
         .leaflet-container { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; }
         .leaflet-control-attribution { display: none !important; }
+        .leaflet-control-zoom a {
+          border-radius: 8px !important;
+          border: 1px solid #E4E4E7 !important;
+          color: #52525B !important;
+          font-size: 16px !important;
+        }
+        .leaflet-control-zoom { border: none !important; box-shadow: 0 2px 12px rgba(0,0,0,0.08) !important; }
       `}</style>
 
       <div className="flex h-screen pt-20 overflow-hidden">
@@ -190,7 +252,6 @@ export default function MapIntelligence() {
             <div className="text-sm text-[#52525B]">South Mumbai</div>
           </div>
 
-          {/* Filters */}
           <div className="p-3 border-b border-[#E4E4E7]">
             <div className="flex items-center gap-1.5 mb-2">
               <Filter size={12} className="text-[#A1A1AA]" />
@@ -214,7 +275,6 @@ export default function MapIntelligence() {
             </div>
           </div>
 
-          {/* Location list */}
           <div className="p-2">
             {locations.map(location => (
               <button
@@ -245,10 +305,10 @@ export default function MapIntelligence() {
 
         {/* Map */}
         <div className="flex-1 relative">
-          <div ref={mapContainerRef} className="absolute inset-0" />
+          <div id="intelligence-map" className="absolute inset-0" />
         </div>
 
-        {/* Right panel — Location Intelligence */}
+        {/* Right panel */}
         <AnimatePresence>
           {selectedLocation && (
             <motion.div
@@ -265,7 +325,10 @@ export default function MapIntelligence() {
                     <div className="text-xs font-semibold text-[#B8973B] tracking-widest uppercase mb-1">Selected Area</div>
                     <h2 className="text-xl font-light text-[#09090B] tracking-tight">{selectedLocation.name}</h2>
                   </div>
-                  <button onClick={() => setSelectedLocation(null)} className="p-1.5 rounded-lg hover:bg-[#F4F4F5] text-[#A1A1AA] transition-colors">
+                  <button
+                    onClick={() => setSelectedLocation(null)}
+                    className="p-1.5 rounded-lg hover:bg-[#F4F4F5] text-[#A1A1AA] transition-colors"
+                  >
                     <X size={14} />
                   </button>
                 </div>
@@ -306,7 +369,8 @@ export default function MapIntelligence() {
                           <div className="min-w-0">
                             <div className="text-sm font-medium text-[#09090B] truncate">{project.name}</div>
                             <div className="text-xs text-[#71717A] mt-0.5">{project.developer}</div>
-                            <div className={cn('inline-flex text-[10px] px-2 py-0.5 rounded-full mt-1.5',
+                            <div className={cn(
+                              'inline-flex text-[10px] px-2 py-0.5 rounded-full mt-1.5',
                               project.possessionStatus === 'Ready To Move' ? 'bg-[#ECFDF5] text-[#059669]' :
                               project.possessionStatus === 'Under Construction' ? 'bg-[#FFF7ED] text-[#EA580C]' : 'bg-[#EFF6FF] text-[#2563EB]'
                             )}>
