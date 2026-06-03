@@ -37,6 +37,28 @@ export interface Location {
   residentProfile: string
 }
 
+export interface FloorPlanByConfig {
+  type: string
+  carpetArea: string
+  image: string
+  description: string
+  bedrooms: number
+  bathrooms: number
+  highlights: string[]
+}
+
+export interface AmenitiesCategory {
+  category: string
+  icon: string
+  items: string[]
+}
+
+export interface NotableResident {
+  category: string
+  description: string
+  icon: string
+}
+
 export interface Project {
   id: string
   name: string
@@ -82,6 +104,10 @@ export interface Project {
   investmentThesis?: string
   uniqueSellingPoints: string[]
   nearbyInfrastructure?: NearbyInfrastructure
+  floorPlansByConfig?: FloorPlanByConfig[]
+  amenitiesCategories?: AmenitiesCategory[]
+  notableResidents?: NotableResident[]
+  masterLayoutDescription?: string
 }
 
 export interface Configuration {
