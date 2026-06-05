@@ -35,7 +35,7 @@ export default function AdminPage() {
               <Lock size={20} className="text-[#B8973B]" />
             </div>
             <h1 className="text-2xl font-light text-[#09090B] tracking-tight">Admin Panel</h1>
-            <p className="text-sm text-[#71717A] mt-2">Value Properties · Curated by Sreeja</p>
+            <p className="text-sm text-[#71717A] mt-2">Value Properties · Curated by Shreeja</p>
           </div>
           <div className="p-8 rounded-3xl border border-[#E4E4E7] bg-white shadow-sm">
             <label className="text-xs font-semibold text-[#A1A1AA] uppercase tracking-wider block mb-2">Password</label>

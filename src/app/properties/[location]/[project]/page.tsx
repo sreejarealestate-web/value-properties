@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { locations } from '@/data/locations'
 import { getProjectById } from '@/data/projects'
-import { ArrowLeft, Maximize2, X, ChevronLeft, ChevronRight, Download, FileText, Map, LayoutGrid, Users, Star } from 'lucide-react'
+import { ArrowLeft, Maximize2, X, ChevronLeft, ChevronRight, Download, FileText, Map, LayoutGrid, Users, Star, MapPin } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ─── Lightbox ────────────────────────────────────────────────────────────────
@@ -168,6 +168,33 @@ export default function ProjectPage({ params }: { params: Promise<{ location: st
                 <DataRow label="Car Park" value={project.carParkType} />
                 <DataRow label="Maintenance" value={project.maintenance} />
                 <DataRow label="View Types" value={project.viewTypes.join(', ')} />
+              </div>
+
+              {/* Google Maps location */}
+              <div className="mb-8 rounded-2xl overflow-hidden border border-[#E4E4E7]">
+                <iframe
+                  title={`${project.name} location`}
+                  width="100%"
+                  height="240"
+                  style={{ border: 0, display: 'block' }}
+                  loading="lazy"
+                  allowFullScreen
+                  src={`https://maps.google.com/maps?q=${project.coordinates[1]},${project.coordinates[0]}&z=15&output=embed`}
+                />
+                <div className="flex items-center justify-between px-4 py-3 bg-white">
+                  <div className="flex items-center gap-2 text-sm text-[#52525B]">
+                    <MapPin size={14} className="text-[#B8973B]" />
+                    <span>{project.name}, {project.location}</span>
+                  </div>
+                  <a
+                    href={`https://maps.google.com/?q=${project.coordinates[1]},${project.coordinates[0]}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#09090B] text-white text-xs font-medium hover:bg-[#27272A] transition-colors"
+                  >
+                    Open in Google Maps ↗
+                  </a>
+                </div>
               </div>
 
               {project.elevationExplained && (

@@ -66,7 +66,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#B8973B]/30 bg-[#B8973B]/10 mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-[#B8973B]" />
-              <span className="text-[#B8973B] text-xs font-semibold tracking-widest uppercase">Curated by Sreeja</span>
+              <span className="text-[#B8973B] text-xs font-semibold tracking-widest uppercase">Curated by Shreeja</span>
             </div>
           </motion.div>
           <motion.h1
@@ -76,12 +76,16 @@ export default function HomePage() {
             className="text-white mb-6"
             style={{ fontSize: 'clamp(2.5rem, 6vw, 5rem)', fontWeight: 300, letterSpacing: '-0.03em', lineHeight: 1.05 }}
           >
-            Making your real estate
-            <br />search{' '}
-            <span style={{ background: 'linear-gradient(135deg, #B8973B 0%, #D4AF5A 50%, #B8973B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-              seamless, personalised
-            </span>
-            <br />and valued.
+            Making your real estate search
+            <br />seamless, personalised and{' '}
+            <motion.span
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1.2, delay: 0.6 }}
+              style={{ background: 'linear-gradient(135deg, #B8973B 0%, #D4AF5A 40%, #E8C56A 60%, #B8973B 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text', backgroundSize: '200% auto', display: 'inline-block' }}
+            >
+              valued.
+            </motion.span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
