@@ -1,21 +1,21 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, MapPin, Filter, Building2 } from 'lucide-react'
 import { locations } from '@/data/locations'
-import { getProjectsByLocation } from '@/data/projects'
+import { projects as allProjects, getProjectsByLocation } from '@/data/projects'
 import { locationBoundaries } from '@/data/boundaries'
 import { Location, Project } from '@/types'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 
 const FILTERS = [
-  { id: 'sea-view', label: 'Sea View' },
-  { id: 'ready', label: 'Ready Projects' },
-  { id: 'under-construction', label: 'Under Construction' },
-  { id: 'branded', label: 'Branded Residences' },
-  { id: 'sky-mansion', label: 'Sky Mansions' },
+  { id: 'sea-view', label: 'Sea View', match: (p: Project) => p.tags.includes('Sea View') || p.viewTypes.some(v => v.toLowerCase().includes('sea')) },
+  { id: 'ready', label: 'Ready Projects', match: (p: Project) => p.possessionStatus === 'Ready To Move' || p.possessionStatus === 'OC Received' },
+  { id: 'under-construction', label: 'Under Construction', match: (p: Project) => p.possessionStatus === 'Under Construction' },
+  { id: 'branded', label: 'Branded Residences', match: (p: Project) => p.tags.includes('Branded Residence') },
+  { id: 'sky-mansion', label: 'Sky Mansions', match: (p: Project) => p.tags.includes('Sky Mansion') },
 ]
 
 function ScoreBar({ score, label }: { score: number; label: string }) {
@@ -46,14 +46,26 @@ export default function MapIntelligence() {
   const projectMarkersRef = useRef<any[]>([])
   const boundaryLayerRef = useRef<any>(null)
 
-  const locationProjects = selectedLocation ? getProjectsByLocation(selectedLocation.id) : []
+  // Apply active filters to projects
+  const filteredProjects = useMemo(() => {
+    if (activeFilters.length === 0) return allProjects
+    const activeMatchers = FILTERS.filter(f => activeFilters.includes(f.id)).map(f => f.match)
+    return allProjects.filter(p => activeMatchers.every(match => match(p)))
+  }, [activeFilters])
+
+  const locationProjects = useMemo(() => {
+    const base = selectedLocation ? getProjectsByLocation(selectedLocation.id) : []
+    if (activeFilters.length === 0) return base
+    const activeMatchers = FILTERS.filter(f => activeFilters.includes(f.id)).map(f => f.match)
+    return base.filter(p => activeMatchers.every(match => match(p)))
+  }, [selectedLocation, activeFilters])
 
   const toggleFilter = (id: string) =>
     setActiveFilters(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id])
 
   useEffect(() => {
     if (!mapRef.current) return
-    // Update project pins when selectedLocation changes
+    // Update project pins when selectedLocation or filters change
     const updateProjectPins = async () => {
       const L = (await import('leaflet')).default
       // Remove old project markers
@@ -61,7 +73,7 @@ export default function MapIntelligence() {
       projectMarkersRef.current = []
 
       if (!selectedLocation) return
-      const projs = getProjectsByLocation(selectedLocation.id)
+      const projs = locationProjects
 
       projs.forEach(project => {
         const [lng, lat] = project.coordinates
@@ -89,7 +101,7 @@ export default function MapIntelligence() {
     }
 
     updateProjectPins()
-  }, [selectedLocation])
+  }, [selectedLocation, locationProjects])
 
   useEffect(() => {
     if (!mapRef.current) return
@@ -253,25 +265,36 @@ export default function MapIntelligence() {
           </div>
 
           <div className="p-3 border-b border-[#E4E4E7]">
-            <div className="flex items-center gap-1.5 mb-2">
-              <Filter size={12} className="text-[#A1A1AA]" />
-              <span className="text-[10px] font-semibold text-[#A1A1AA] tracking-widest uppercase">Filter</span>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1.5">
+                <Filter size={12} className="text-[#A1A1AA]" />
+                <span className="text-[10px] font-semibold text-[#A1A1AA] tracking-widest uppercase">Filter</span>
+              </div>
+              {activeFilters.length > 0 && (
+                <button onClick={() => setActiveFilters([])} className="text-[10px] text-[#B8973B] hover:underline">
+                  Clear ({filteredProjects.length} shown)
+                </button>
+              )}
             </div>
             <div className="flex flex-wrap gap-1">
-              {FILTERS.map(f => (
-                <button
-                  key={f.id}
-                  onClick={() => toggleFilter(f.id)}
-                  className={cn(
-                    'text-[10px] px-2 py-0.5 rounded-full border transition-all',
-                    activeFilters.includes(f.id)
-                      ? 'bg-[#B8973B] border-[#B8973B] text-white'
-                      : 'border-[#E4E4E7] text-[#71717A] hover:border-[#B8973B]/40'
-                  )}
-                >
-                  {f.label}
-                </button>
-              ))}
+              {FILTERS.map(f => {
+                const count = allProjects.filter(f.match).length
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => toggleFilter(f.id)}
+                    className={cn(
+                      'text-[10px] px-2 py-0.5 rounded-full border transition-all flex items-center gap-1',
+                      activeFilters.includes(f.id)
+                        ? 'bg-[#B8973B] border-[#B8973B] text-white'
+                        : 'border-[#E4E4E7] text-[#71717A] hover:border-[#B8973B]/40'
+                    )}
+                  >
+                    {f.label}
+                    <span className="opacity-60">({count})</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
 

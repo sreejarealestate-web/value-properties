@@ -66,7 +66,7 @@ export default function HomePage() {
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#B8973B]/30 bg-[#B8973B]/10 mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-[#B8973B]" />
-              <span className="text-[#B8973B] text-xs font-semibold tracking-widest uppercase">Curated by Shreeja</span>
+              <span className="text-[#B8973B] text-xs font-semibold tracking-widest uppercase">Curated by Sreeja</span>
             </div>
           </motion.div>
           <motion.h1

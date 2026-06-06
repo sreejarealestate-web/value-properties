@@ -8,7 +8,7 @@ export default function Footer() {
           <div className="md:col-span-2">
             <div className="mb-4">
               <div className="text-base font-600 text-[#09090B]">Value Properties</div>
-              <div className="text-xs text-[#B8973B] tracking-widest uppercase mt-0.5">Curated by Shreeja</div>
+              <div className="text-xs text-[#B8973B] tracking-widest uppercase mt-0.5">Curated by Sreeja</div>
             </div>
             <p className="text-sm text-[#71717A] leading-relaxed max-w-xs">
               A private luxury real estate intelligence platform designed to help clients understand South Mumbai's most prestigious addresses, projects, pricing and future growth potential.
@@ -43,7 +43,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="mt-12 pt-8 border-t border-[#E4E4E7] flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-[#A1A1AA]">© 2024 Value Properties. Curated by Shreeja. All rights reserved.</p>
+          <p className="text-xs text-[#A1A1AA]">© 2024 Value Properties. Curated by Sreeja. All rights reserved.</p>
           <p className="text-xs text-[#A1A1AA]">A private luxury real estate intelligence platform.</p>
         </div>
       </div>

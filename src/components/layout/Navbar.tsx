@@ -27,7 +27,7 @@ export default function Navbar() {
       <nav className="glass mx-4 mt-4 rounded-2xl px-6 py-3 flex items-center justify-between shadow-sm shadow-black/5">
         <Link href="/" className="flex flex-col leading-none">
           <span className="text-sm font-semibold tracking-tight text-[#09090B]">Value Properties</span>
-          <span className="text-[10px] font-normal text-[#B8973B] tracking-widest uppercase mt-0.5">Curated by Shreeja</span>
+          <span className="text-[10px] font-normal text-[#B8973B] tracking-widest uppercase mt-0.5">Curated by Sreeja</span>
         </Link>
 
         <div className="hidden lg:flex items-center gap-1">

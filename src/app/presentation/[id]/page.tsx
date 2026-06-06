@@ -134,7 +134,7 @@ export default function PresentationPage({ params }: { params: Promise<{ id: str
       {/* Brand watermark */}
       <div className="absolute bottom-6 left-6 z-50 opacity-30">
         <div className="text-xs text-white">Value Properties</div>
-        <div className="text-[10px] text-[#B8973B] tracking-widest uppercase">Curated by Shreeja</div>
+        <div className="text-[10px] text-[#B8973B] tracking-widest uppercase">Curated by Sreeja</div>
       </div>
 
       {/* Slide content */}
@@ -297,7 +297,7 @@ export default function PresentationPage({ params }: { params: Promise<{ id: str
 
           {slide.id === 'advisory' && (
             <div className="max-w-5xl w-full">
-              <div className="text-[#B8973B] text-xs font-semibold tracking-widest uppercase mb-2">{project.name} · Advisory Note · Curated by Shreeja</div>
+              <div className="text-[#B8973B] text-xs font-semibold tracking-widest uppercase mb-2">{project.name} · Advisory Note · Curated by Sreeja</div>
               <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', fontWeight: 300, letterSpacing: '-0.025em' }} className="mb-8">Why this project.</h2>
               {project.whyRecommend && (
                 <p className="text-[#A1A1AA] text-xl font-light leading-relaxed mb-8 italic border-l-2 border-[#B8973B] pl-5">&ldquo;{project.whyRecommend}&rdquo;</p>

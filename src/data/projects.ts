@@ -55,7 +55,7 @@ export const projects: Project[] = [
       'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&q=80',
       'https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800&q=80',
     ],
-    coordinates: [72.8162, 18.9984],
+    coordinates: [72.8159, 18.9989],
     launchYear: 2010,
     currentPricePerSqFt: 55000,
     historicalPricePerSqFt: 28000,
